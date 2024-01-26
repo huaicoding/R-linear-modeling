@@ -1,0 +1,224 @@
+---
+title: "Stat151A Linear Algebra in R"
+output: html_document
+date: "2024-01-24"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Linear Algebra in R
+## Creating Vectors
+```{r}
+x <- c(1, 2, 3, 4)
+x
+
+y <- rep(1, 4)
+y
+
+z <- seq(5)
+z
+
+u <- seq(2, 4)
+u
+
+v <- seq(2, 8, by = 2)
+v
+```
+
+## Vector Operations
+```{r}
+# Vector addition
+x <- c(1, 2, 3, 4)
+y <- c(5, 6, 7, 8)
+x + y
+
+z <- c(5, 6)
+x + z 
+
+w <- c(5, 6, 7)
+x + w
+
+# Scalar multiplication
+c <- 2
+c * x
+
+# Element-wise multiplication
+x * y
+x * z
+x * w
+```
+
+### Exercise 1
+Given a vector $x = (x_1, \dots, x_n)$, how can we compute the following norm of
+the vector?
+$$\lvert\lvert x \rvert\rvert := \sqrt{x_1^2 + \dots + x_n^2}$$
+```{r}
+x <- c(1, 2, 3)
+
+# Leave your answer below
+sqrt(sum(x *x))
+
+# Check your answer
+sqrt(1**2 + 2**2 + 3**2)
+```
+
+## Creating Matrices
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, ncol = 3)
+X
+
+Y <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+Y
+
+Z <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2, byrow = TRUE)
+Z
+
+nrow(X)  # the number of rows of X
+ncol(X)  # the number of columns of X
+
+dim(X)
+dim(X)[1]
+dim(X)[2]
+```
+
+```{r}
+# Diagonal matrix
+D <- diag(c(1, 2, 3))
+D
+
+E <- diag(c(1, 2, 3), nrow = 5)
+E
+
+I <- diag(1, nrow = 4)
+I
+```
+
+## Matrix Addition
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3)
+Y <- matrix(c(7, 8, 9, 10, 11, 12), nrow = 3)
+X 
+Y
+X + Y
+```
+
+## Matrix Multiplication
+```{r}
+X <- matrix(c(1, 2, 3, 4), nrow = 2)
+X
+
+# Scalar multiplication
+c <- 2
+c * X
+
+# Matrix - matrix multiplication
+Y <- matrix(c(7, 8, 9, 10), nrow = 2)
+Y
+X %*% Y
+X * Y  # Element-wise multiplication
+
+# Matrix - vector multiplication
+u <- c(5, 6)
+X %*% u
+X * u  # Can you expect what it will be?
+```
+
+## Some Other Matrix Operations
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3, ncol = 2)
+X
+
+# The transpose of X
+t(X)
+
+Y <- matrix(c(1, 2, 3, 4), nrow = 2)
+Y
+
+# The inverse of Y
+Y_inv <- solve(Y)
+Y_inv
+Y %*% Y_inv
+Y_inv %*% Y
+
+# The determinant of Y
+det(Y)
+```
+
+### Exercise 2
+Given a regressor vector $x = (x1, \dots, x_n)$ and a response vector 
+$y = (y_1, \dots, y_n)$, find $\beta_1$ and $\beta_2$ that minimize 
+$$\sum_{i = 1}^{n} (y_i - \beta_2 x_i - \beta_1)^2$$. 
+Recall that 
+$$
+\begin{split}
+  \hat{\beta}_2 &= (\overline{xy} - \overline{x} \cdot \overline{y}) / (\overline{xx} - \overline{x}^2) \\
+  \hat{\beta}_1 &= \overline{y} - \hat{\beta}_2 \overline{x}.
+\end{split}
+$$
+Also, compute the first five residuals. 
+
+```{r}
+bodyfat <- read.csv(file = "bodyfat.csv")
+x <- bodyfat$Abdomen
+y <- bodyfat$bodyfat
+
+# Leave your answer below
+x_bar <- mean(x)
+y_bar <- mean(y)
+xx_bar <- mean(x * x)
+xy_bar <- mean(x * y)
+b2_hat <- (xy_bar - x_bar *y_bar)/(xx_bar - x_bar**2)
+b1_hat <- y_bar - b2_hat * x_bar
+b1_hat
+b2_hat
+
+# method2: more general case
+X <- matrix(c(rep(1, length(x)),x), nrow = length(x))
+# also X <- cbind(rep(1, length(X)), x)
+beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
+beta_hat
+residual <- y - X %*% beta_hat
+residual[1:5]
+sum(residual)
+
+# Check you answer
+simple_least_sqaures_result <- lm(y ~ x)
+simple_least_sqaures_result$coefficients
+simple_least_sqaures_result$residuals[1:5]
+```
+
+## Eigenvectors and Eigenvalues
+```{r}
+X <-  matrix(c(3, 2, 3, 4, 6, 8, 2, 5, 4), nrow = 3, ncol = 3)
+X
+
+eigen(X)
+
+lambda1 <- eigen(X)$values[1]
+v1 <- eigen(X)$vectors[, 1]
+
+X %*% v1
+lambda1 * v1
+
+# Evaluate the characteristic polynomial at lambda1
+det(X - lambda1 * diag(1, nrow = nrow(X)))
+```
+
+## Singular Value Decompositions
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+X
+
+svd(X)
+
+U <- svd(X)$u
+D <- diag(svd(X)$d)
+V <- svd(X)$v
+
+U %*% t(U)
+t(U) %*% U
+t(V) %*% V
+U %*% D %*% t(V)
+```

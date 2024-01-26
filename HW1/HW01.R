@@ -39,3 +39,36 @@ Y <- matrix(y)
 beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
 beta_hat 
 
+# c)
+calc_beta <- function(X, Y){
+  beta_hat <- solve(t(X) %*% X) %*% t(X) %*% Y
+  
+  return(beta_hat)
+}
+calc_beta(X,Y)
+
+## Question 3
+al_df <- read.csv("aluminum_dataset.csv", encoding = "UTF - 8") %>%
+  filter(loading_type == "T", temp == 20, lot == "A")
+al_reg_df <- al_df %>% filter(Strain < 0.0035, Strain > 0.0001)
+
+reg <- lm(Stress_MPa ~ 1 + Strain, data = al_reg_df) # with intersect
+al_reg_df$fit1 <- reg$fitted.values
+al_df %>% filter(Strain < 0.0035) %>%
+  ggplot() +
+  geom_point(aes(x=Strain, y=Stress_MPa, color=factor(specimen)), size = 1) +
+  geom_line(aes(x=Strain, y=fit1, color="All Specimen Fitted"), lwd=2, data=al_reg_df)
+
+reg_org <- lm(Stress_MPa ~ 0 + Strain, data = al_reg_df) # without intersect
+al_reg_df$fit2 <- reg_org$fitted.values
+al_df %>% filter(Strain < 0.0035) %>%
+  ggplot() +
+  geom_point(aes(x=Strain, y=Stress_MPa, color=factor(specimen)), size = 1) +
+  geom_line(aes(x=Strain, y=fit2, color="All Specimen Fitted"), lwd=2, data=al_reg_df)
+
+summary(reg)
+summary(reg_org)
+
+
+
+
