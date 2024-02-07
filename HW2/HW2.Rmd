@@ -1,0 +1,175 @@
+---
+title: "HW2"
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Given code
+```{r}
+library(tidyverse)
+library(ggpubr)
+# Check whether matrix `x` == `y` for all entries,
+# up to the tolerance `tol`.  If not, an error is raised.
+AssertMatricesEqual <- function(x, y, tol=1e-9) {
+  if (!(all(dim(x) == dim(y)))) {
+    stop("The dimensions do not match.")
+  }
+  err <- max(abs(x - y))
+  if (err > tol) {
+    stop(sprintf("The error %f is greater than the tolerance.", err))
+  }
+}
+
+
+# Generate an `nrow` x `ncol` matrix with random standard normal entries.
+GenerateMatrix <- function(nrow, ncol) {
+  return(rnorm(nrow * ncol) %>% matrix(nrow, ncol))
+}
+```
+
+### Question 1
+```{r}
+GenerateSPSDMatrix <- function(dim) {
+  a_mat <- GenerateMatrix(dim, dim)
+  s_mat <- 0.5 * (a_mat + t(a_mat))
+  
+  eig = eigen(s_mat)
+  eig$values[eig$values < 0] <- 0
+  psd_mat = eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
+  return(psd_mat)
+}
+
+CheckSPSDMatrix <- function(a) {
+  AssertMatricesEqual(a, t(a))
+  eig = eigen(a)
+  if (! all(eig$values >= -1e-9)) {
+    stop("The matrix is not semi(positive) definite")
+  }
+  print("You've passed the test!")
+}
+
+psd_mat <- GenerateSPSDMatrix(4)
+CheckSPSDMatrix(psd_mat)
+```
+
+### Question 2
+```{r}
+GenerateSPDMatrix <- function(dim) {
+  a_mat <- GenerateMatrix(dim, dim)
+  s_mat <- 0.5 * (a_mat + t(a_mat))
+  
+  eig = eigen(s_mat)
+  eig$values[eig$values < 1] <- 1
+  psd_mat = eig$vectors %*% diag(eig$values) %*% t(eig$vectors)
+  return(psd_mat)
+}
+
+CheckSPDMatrix <- function(a) {
+  AssertMatricesEqual(a, t(a))
+  eig = eigen(a)
+  if (! all(eig$values >= 1 - 1e-9)) {
+    stop("The matrix is not semi(positive) definite")
+  }
+  print("You've passed the test!")
+}
+
+psd_mat <- GenerateSPDMatrix(4)
+CheckSPDMatrix(psd_mat)
+```
+
+### Question 3
+```{r}
+GeneratePSDInverse <- function(s_mat) {
+  eig = eigen(s_mat)
+  
+  inv_eig_values <-  1 / eig$values
+  
+  return(eig$vectors %*% diag(inv_eig_values) %*% t(eig$vectors))
+}
+
+CheckInverse <- function(a, b) {
+  AssertMatricesEqual(a %*% b, diag(rep(1, nrow(a))))
+  print("You've passed the test!")
+}
+
+psd_mat <- GenerateSPDMatrix(4)
+psd_mat_inv <- GeneratePSDInverse(psd_mat)
+CheckInverse(psd_mat, psd_mat_inv)
+```
+
+### Question 4
+```{r}
+GeneratePSDsqrt <- function(s_mat) {
+  eig = eigen(s_mat)
+  
+  inv_eig_values <-  sqrt(eig$values)
+  
+  return(eig$vectors %*% diag(inv_eig_values) %*% t(eig$vectors))
+}
+
+CheckSqrt <- function(a, b) {
+  AssertMatricesEqual(a %*% a, b)
+  print("You've passed the test!")
+}
+
+psd_mat <- GenerateSPDMatrix(4)
+psd_mat_sqrt <- GeneratePSDsqrt(psd_mat)
+CheckSqrt(psd_mat_sqrt, psd_mat)
+```
+
+### Question 5 ??????
+```{r}
+GeneratePSDsqrtCholDecomp <- function(s_mat) {
+# Perform Cholesky decomposition
+  U <- chol(s_mat)
+  
+  # Create a non-symmetric square root by multiplying U with a modified version of its transpose
+  # For the sake of example, let's negate the elements below the diagonal (which are zero in U)
+  non_symmetric_U <- U
+  non_symmetric_U_transpose <- t(U)
+  non_symmetric_U_transpose[lower.tri(non_symmetric_U_transpose)] <- -non_symmetric_U_transpose[lower.tri(non_symmetric_U_transpose)]
+  
+  # Return the product of U and the modified transpose
+  non_symmetric_sqrt <- non_symmetric_U %*% non_symmetric_U_transpose
+  return(non_symmetric_sqrt)
+}
+
+psd_mat <- GenerateSPDMatrix(4)
+psd_mat_sqrt <- GeneratePSDsqrtCholDecomp(psd_mat)
+print(psd_mat)
+print(psd_mat_sqrt %*% psd_mat_sqrt)
+print(psd_mat_sqrt)
+print(GeneratePSDsqrt(psd_mat))
+CheckSqrt(psd_mat_sqrt, psd_mat)
+```
+
+### Question 6
+```{r}
+GenerateProj <- function(X) {
+  return(X %*% solve(t(X) %*% X) %*% t(X))
+}
+
+CheckProj <- function(P) {
+  AssertMatricesEqual(P %*% P, P)
+  print("You've passed the test!")
+}
+
+X <- GenerateMatrix(5, 3)
+G <- GenerateProj(X)
+CheckProj(G)
+```
+
+### Question 7
+```{r}
+GenerateProj_row <- function(X) {
+  return(t(X) %*% solve(X %*% t(X)) %*% X)
+}
+
+X <- GenerateMatrix(3, 5)
+G <- GenerateProj_row(X)
+CheckProj(G)
+```
