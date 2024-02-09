@@ -32,6 +32,7 @@ GenerateMatrix <- function(nrow, ncol) {
 ```
 
 ### Question 1
+Starting from GenerateMatrix(), write a function to generate a random symmetric positive semi-definite matrix of a given size.
 ```{r}
 GenerateSPSDMatrix <- function(dim) {
   a_mat <- GenerateMatrix(dim, dim)
@@ -57,8 +58,9 @@ CheckSPSDMatrix(psd_mat)
 ```
 
 ### Question 2
+Starting from GenerateMatrix(), write a function to generate a random symmetric positive definite matrix of a given size whose smallest eigenvalue is greater than one. (Hint: you can add something to your previous solution.)
 ```{r}
-GenerateSPDMatrix <- function(dim) {
+GeneratePSDMatrix <- function(dim) {
   a_mat <- GenerateMatrix(dim, dim)
   s_mat <- 0.5 * (a_mat + t(a_mat))
   
@@ -77,11 +79,12 @@ CheckSPDMatrix <- function(a) {
   print("You've passed the test!")
 }
 
-psd_mat <- GenerateSPDMatrix(4)
+psd_mat <- GeneratePSDMatrix(4)
 CheckSPDMatrix(psd_mat)
 ```
 
 ### Question 3
+Write a function that takes in a symmetric PSD matrix and returns an inverse computed from the eigendecomposition. You may use eigen().
 ```{r}
 GeneratePSDInverse <- function(s_mat) {
   eig = eigen(s_mat)
@@ -96,12 +99,13 @@ CheckInverse <- function(a, b) {
   print("You've passed the test!")
 }
 
-psd_mat <- GenerateSPDMatrix(4)
+psd_mat <- GeneratePSDMatrix(4)
 psd_mat_inv <- GeneratePSDInverse(psd_mat)
 CheckInverse(psd_mat, psd_mat_inv)
 ```
 
 ### Question 4
+Write a function that takes in a symmetric PSD matrix and returns a square root computed from the eigen-decomposition. You may use eigen().
 ```{r}
 GeneratePSDsqrt <- function(s_mat) {
   eig = eigen(s_mat)
@@ -116,38 +120,31 @@ CheckSqrt <- function(a, b) {
   print("You've passed the test!")
 }
 
-psd_mat <- GenerateSPDMatrix(4)
+psd_mat <- GeneratePSDMatrix(4)
 psd_mat_sqrt <- GeneratePSDsqrt(psd_mat)
 CheckSqrt(psd_mat_sqrt, psd_mat)
 ```
 
-### Question 5 ??????
+### Question 5
+Write a function that takes in a symmetric PSD matrix and returns a (possibly non-symmetric) square root computed from the cholesky decomposition. You may use chol().
 ```{r}
 GeneratePSDsqrtCholDecomp <- function(s_mat) {
-# Perform Cholesky decomposition
-  U <- chol(s_mat)
+  cho = chol(s_mat)
   
-  # Create a non-symmetric square root by multiplying U with a modified version of its transpose
-  # For the sake of example, let's negate the elements below the diagonal (which are zero in U)
-  non_symmetric_U <- U
-  non_symmetric_U_transpose <- t(U)
-  non_symmetric_U_transpose[lower.tri(non_symmetric_U_transpose)] <- -non_symmetric_U_transpose[lower.tri(non_symmetric_U_transpose)]
-  
-  # Return the product of U and the modified transpose
-  non_symmetric_sqrt <- non_symmetric_U %*% non_symmetric_U_transpose
-  return(non_symmetric_sqrt)
+  return(cho)
 }
 
-psd_mat <- GenerateSPDMatrix(4)
+CheckSqrtTrans <- function(a, b) {
+  AssertMatricesEqual(t(a) %*% a, b)
+  print("You've passed the test!")
+}
+psd_mat <- GeneratePSDMatrix(4)
 psd_mat_sqrt <- GeneratePSDsqrtCholDecomp(psd_mat)
-print(psd_mat)
-print(psd_mat_sqrt %*% psd_mat_sqrt)
-print(psd_mat_sqrt)
-print(GeneratePSDsqrt(psd_mat))
-CheckSqrt(psd_mat_sqrt, psd_mat)
+CheckSqrtTrans(psd_mat_sqrt, psd_mat)
 ```
 
 ### Question 6
+Write a function that takes in a potentially non-square matrix and returns a projection matrix onto the column span.
 ```{r}
 GenerateProj <- function(X) {
   return(X %*% solve(t(X) %*% X) %*% t(X))
@@ -164,6 +161,7 @@ CheckProj(G)
 ```
 
 ### Question 7
+Write a function that takes in a potentially non-square matrix and returns a projection matrix onto the row span.
 ```{r}
 GenerateProj_row <- function(X) {
   return(t(X) %*% solve(X %*% t(X)) %*% X)
@@ -172,4 +170,51 @@ GenerateProj_row <- function(X) {
 X <- GenerateMatrix(3, 5)
 G <- GenerateProj_row(X)
 CheckProj(G)
+```
+
+### Question 8
+Write a function that takes in a potentially non-square matrix and returns a projection matrix onto the orthogonal complement of the column span.
+```{r}
+GeneratProjCom <- function(X) {
+  proj_X <- X %*% solve(t(X) %*% X) %*% t(X)
+  proj_X_com <- diag(rep(1, dim(proj_X)[1])) - proj_X
+  
+  return(proj_X_com)
+}
+
+CheckProjCom <- function(P, PT, y) {
+  proj_y = P %*% y
+  proj_y_com = PT %*% y
+  AssertMatricesEqual(proj_y + proj_y_com, y)
+  print("You've passed the test!")
+}
+X <- GenerateMatrix(5, 3)
+P <- GenerateProj(X)
+PC <- GeneratProjCom(X)
+y = rnorm(5)
+CheckProjCom(P, PC, y)
+```
+
+### Question 9
+Write a function that takes in a potentially non-square matrix and returns an orthonormal basis for its column span.
+```{r}
+GenerateOrthoBasis <- function(X) {
+  X_qr <- qr(X)
+  
+  return(qr.Q(X_qr))
+}
+
+CheckOrtho <- function(X) {
+  AssertMatricesEqual(t(X) %*% X, diag(rep(1,dim(X)[2])))
+  print("You've passed the test!")
+}
+X <- GenerateMatrix(5, 3)
+ortho_basis <- GenerateOrthoBasis(X)
+CheckOrtho(orth_basis)
+```
+
+### Question 10
+Write a function that takes in a covariance matrix and returns a draw from the multivariate normal distribution with mean zero and the given covariance matrix. You may use only rnorm(n, mean=0, sd=1) to generate random variables. Verify that you have succeeded using Monte Carlo draws and AssertMatricesEqual() with an appropriate tolerance.
+```{r}
+
 ```

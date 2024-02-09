@@ -1,0 +1,160 @@
+---
+title: "Stat151A Lab 4"
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Spectral Decomposition
+```{r}
+AssertMatricesEqual <- function(x, y, tol=1e-9) {
+  if (!(all(dim(x) == dim(y)))) {
+    stop("The dimensions do not match.")
+  }
+  err <- max(abs(x - y))
+  if (err > tol) {
+    stop(sprintf("The error %f is greater than the tolerance.", err))
+  }
+}
+```
+
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+A <- t(X) %*% X
+A
+
+eigen(A)
+
+# Spectral Decomposition
+P <- eigen(A)$vectors
+D <- diag(eigen(A)$values)
+
+# Check A = PD(P^T)
+A 
+P %*% D %*% t(P)
+AssertMatricesEqual(A, P %*% D %*% t(P))
+```
+
+
+## Exercise 1
+Check the identity that we just learned with the following matrix
+$$
+  A = \sum_{i = 1}^{n} \lambda_i v_i v_i^T.
+$$
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+A <- t(X) %*% X
+
+# Leave your answer below
+
+
+B <- 
+
+# Check your answer
+A
+B
+AssertMatricesEqual(A, B)
+```
+
+
+## Exercise 2
+Create a symmetric matrix whose eigenvectors are $v_1 = (1, 1, 0), v_2 = (1, -1, 0), v_3 = (0, 0, 1)$
+and their corresponding eigenvalues are $\lambda_1 = 2, \lambda_2 = 1, \lambda_3 = -1$.
+```{r}
+v1 <- c(1, 1, 0)
+v2 <- c(1, -1, 0)
+v3 <- c(0, 0, 1)
+lambda1 <- 2
+lambda2 <- 1
+lambda3 <- -1
+
+# Leave your answer below
+
+
+A <- 
+
+# Check your answer
+eigen(A)
+```
+
+## Exercise 3
+(1) Write a function that takes in a symmetric matrix and checks whether the 
+matrix is positive semidefinite. You don't need to check whether the matrix is 
+symmetric.
+
+(2) Write a function that takes in a symmetric matrix and checks whether the 
+matrix is positive definite. You don't need to check whether the matrix is 
+symmetric.
+```{r}
+# Leave your answer below
+
+
+# Check your answer
+A <- matrix(c(3, 2, 2, 2), nrow = 2)
+eigen(A)$values
+AssertPSD(A)
+AssertPD(A)
+
+B <- matrix(c(4, 2, 2, 1), nrow = 2)
+eigen(B)$values
+AssertPSD(B)
+AssertPD(B)
+
+C <- matrix(c(3, 2, 2, -1), nrow = 2)
+eigen(C)$values
+AssertPSD(C)
+AssertPD(C)
+```
+
+## Exercise 4
+Find the inverse (without using solve()) and a square root of the following 
+matrix.
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 3)
+A <- t(X) %*% X
+A
+
+# Leave your answer below
+
+
+# Check your answer
+solve(A)
+A_inv
+AssertMatricesEqual(solve(A), A_inv)
+
+A
+A_sqrt %*% A_sqrt
+AssertMatricesEqual(A, A_sqrt %*% A_sqrt)
+```
+
+
+# Singular Value Decomposition
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6), nrow = 2)
+
+svd(X)
+
+U <- svd(X)$u
+D <- diag(svd(X)$d)
+V <- svd(X)$v
+
+U %*% t(U)
+t(U) %*% U
+t(V) %*% V
+U %*% D %*% t(V)
+AssertMatricesEqual(X, U %*% D %*% t(V))
+```
+
+## Exercise 5
+For the following matrix, find an orthonormal basis that spans the column space 
+of $X$.
+```{r}
+X <- matrix(c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), nrow = 3)
+
+# Leave your answer below
+
+```
