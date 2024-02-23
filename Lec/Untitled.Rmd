@@ -1,0 +1,165 @@
+---
+title: "lec 2.15"
+output: html_document
+date: "2024-02-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# This is the key function to modify.  The rest is boilerplate (meaning code that is pretty much the
+# same every time you use it).
+
+# Draw a random sample mean.
+#
+# Inputs:
+#   - n_obs: The number of independent observations that form the sample mean
+#   - true_mean: The true mean of the draws.
+# Returns:
+#   A dataframe with three columns and one row:
+#   - n: The number of samples that contributed to the sample mean
+#   - value: The calculated sample mean
+#   - quantity: A readable description of the random variable
+```{r}
+library(tidyverse)
+library(ggpubr)
+library(mvtnorm)
+f <- function(x) {
+  return(x ^ 2)
+}
+DrawLLNSample <- function(n_obs, true_mean) {
+  x <- f(rnorm(n_obs, mean=true_mean))  # <- We'll be modifying this line
+  return(data.frame(n=n_obs, value=sum(x) / n_obs, quantity="normal"))
+}
+```
+# Draw a random sample mean.
+#
+# Inputs:
+#   - DrawFun: A function taking a single argument, the number of draws, and returning a dataframe
+#       with the sample mean and other metadata
+#   - n_obs_vec: A numeric vector containing the number of observations to tru
+#   - num_draws: The number of independent draws to compute for each n_obs
+# Returns:
+#   A dataframe with the output of DrawFun, and a column indicating which draw
+#   index produced that dataframe.
+```{r}
+ConductLLNExperiment <- function(DrawFun, n_obs_vec=seq(10, 3000, by=30), num_draws=20) {
+    # The rest of this can be mostly the same every time you run a univariate analysis
+    lln_df <- data.frame()
+    pb <- txtProgressBar(min=0, max=max(n_obs_vec), initial=0, style=3)
+    for (n_obs in n_obs_vec) {
+      setTxtProgressBar(pb, n_obs)
+      for (draw in 1:num_draws) {
+        lln_df <- bind_rows(
+          lln_df,
+          DrawFun(n_obs) %>% mutate(draw=draw))  
+      }
+    }
+    close(pb)
+    return(lln_df)
+}
+```
+# Evaluate the sample average for these numbers of observations
+```{r}
+true_mean <- 4
+DrawFun <- function(n_obs) {
+    DrawLLNSample(n_obs, true_mean=true_mean)
+}
+lln_df <- ConductLLNExperiment(DrawFun)
+
+ggplot(lln_df) +
+  geom_point(aes(x=n, y=value), alpha=1.0) +
+  geom_hline(aes(yintercept=true_mean), color="red") +
+  geom_hline(aes(yintercept=f(true_mean)), colar="green")
+```
+# Convert a matrix to a tidy dataframe.
+#
+# Inputs:
+#   - mat: A (possibly non-square) matrix
+#   - prefix: A readable name describing the matrix
+# Returns:
+#   - A dataframe with three columns:
+#     value: The value of the matrix entry at <row>, <col>
+#     component: A column containing the location <prefix>.<row>.<col> 
+#     quantity: The value of <prefix> 
+```{r}
+FlattenMatrix <- function(mat, prefix) {
+  df_list <- list()
+  if (!is.matrix(mat)) {
+    mat <- as.matrix(mat)
+  }
+  for (d1 in 1:nrow(mat)) {
+    for (d2 in 1:ncol(mat)) {
+      df_list[[(paste0(prefix, ".", d1,  ".", d2))]] <- mat[d1, d2, drop=FALSE]
+    }
+  }
+  return(as.data.frame(df_list) %>% 
+           pivot_longer(cols=everything(), names_to="component") %>%
+           mutate(quantity=prefix))
+}
+
+
+
+foo_mat <- matrix(1:6, nrow=3, ncol=2)
+print(FlattenMatrix(foo_mat, "foo"))
+print(foo_mat)
+
+foo_vec <- 1:3
+print(FlattenMatrix(foo_vec, "foo"))
+print(foo_vec)
+```
+# Invert a matrix.  If the matrix is singular, return a matrix
+# of NA, the same shape as the input, without terminating or raising an error.
+```{r}
+SafeSolve <- function(mat) {
+  mat_inv <- matrix(NA, nrow(mat), ncol(mat) )
+  tryCatch(mat_inv <- solve(mat),
+           error=function(e) { })
+  return(mat_inv)
+}
+
+
+print(SafeSolve(diag(3)))
+print(SafeSolve(matrix(0, 3, 3)))
+```
+
+
+# Draw a random sample mean.
+# Inputs:
+#   - n_obs: The number of independent observations that form the sample mean
+#   - true_mean: The true mean of the draws.
+# Returns:
+#   A dataframe with three columns and one row:
+#   - n: The number of samples that contributed to the sample mean
+#   - value: The calculated sample mean
+#   - quantity: A readable description of the random variable
+```{r}
+DrawLLNVectorSample <- function(n_obs, true_mean, cov_mat) {
+  stopifnot(ncol(cov_mat) == nrow(cov_mat))
+  stopifnot(length(true_mean) == nrow(cov_mat))
+  x <- rmvnorm(n_obs, mean=true_mean, sigma=cov_mat)
+  xbar <- apply(x, FUN=sum, MARGIN=2) / n_obs
+  return(FlattenMatrix(xbar, "xbar") %>%
+           mutate(n=n_obs, quantity="xbar"))
+}
+# Set some parameters and sanity check the output
+x_dim <- 3
+true_mean <- 1:x_dim
+# cov_mat <- diag(x_dim)
+cov_mat <- matrix(1,nrow = 3, ncol = 3) # change the cov mat not independent
+cov_mat
+DrawLLNVectorSample(10, true_mean, cov_mat)
+```
+# Evaluate the sample average for these numbers of observations
+```{r}
+DrawFun <- function(n_obs) {
+    DrawLLNVectorSample(n_obs, true_mean=true_mean, cov_mat=cov_mat)
+}
+lln_df <- ConductLLNExperiment(DrawFun)
+
+ggplot(lln_df) +
+  geom_point(aes(x=n, y=value, color=component), alpha=0.1) +
+  geom_hline(aes(yintercept=value), color="red",
+             data=FlattenMatrix(true_mean, "xbar"))
+```

@@ -1,6 +1,8 @@
 ---
 title: "HW2"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2024-02-07"
 ---
 
@@ -50,6 +52,10 @@ CheckSPSDMatrix <- function(a) {
   if (! all(eig$values >= -1e-9)) {
     stop("The matrix is not semi(positive) definite")
   }
+  print("The matrix is: ")
+  print(a)
+  print("The eigen values are: ")
+  print(eig$values)
   print("You've passed the test!")
 }
 
@@ -76,6 +82,10 @@ CheckSPDMatrix <- function(a) {
   if (! all(eig$values >= 1 - 1e-9)) {
     stop("The matrix is not semi(positive) definite")
   }
+  print("The matrix is: ")
+  print(a)
+  print("The eigen values are: ")
+  print(eig$values)
   print("You've passed the test!")
 }
 
@@ -116,7 +126,7 @@ GeneratePSDsqrt <- function(s_mat) {
 }
 
 CheckSqrt <- function(a, b) {
-  AssertMatricesEqual(a %*% a, b)
+  AssertMatricesEqual(a %*% t(a), b)
   print("You've passed the test!")
 }
 
@@ -131,11 +141,11 @@ Write a function that takes in a symmetric PSD matrix and returns a (possibly no
 GeneratePSDsqrtCholDecomp <- function(s_mat) {
   cho = chol(s_mat)
   
-  return(cho)
+  return(t(cho))
 }
 
 CheckSqrtTrans <- function(a, b) {
-  AssertMatricesEqual(t(a) %*% a, b)
+  AssertMatricesEqual(a %*% t(a), b)
   print("You've passed the test!")
 }
 psd_mat <- GeneratePSDMatrix(4)
@@ -151,6 +161,7 @@ GenerateProj <- function(X) {
 }
 
 CheckProj <- function(P) {
+  # it is same to take a random vector and check the projection of the vector is in the column space of X. i.e. P %*% Proj(y on X) = Proj(y on X)
   AssertMatricesEqual(P %*% P, P)
   print("You've passed the test!")
 }
@@ -208,13 +219,41 @@ CheckOrtho <- function(X) {
   AssertMatricesEqual(t(X) %*% X, diag(rep(1,dim(X)[2])))
   print("You've passed the test!")
 }
-X <- GenerateMatrix(5, 3)
+X <- GenerateMatrix(3, 5)
 ortho_basis <- GenerateOrthoBasis(X)
-CheckOrtho(orth_basis)
+CheckOrtho(ortho_basis)
 ```
 
 ### Question 10
 Write a function that takes in a covariance matrix and returns a draw from the multivariate normal distribution with mean zero and the given covariance matrix. You may use only rnorm(n, mean=0, sd=1) to generate random variables. Verify that you have succeeded using Monte Carlo draws and AssertMatricesEqual() with an appropriate tolerance.
 ```{r}
+GenerateMND <- function(Cov) {
+  n <-  dim(Cov)[1]
+  A <-  t(chol(Cov))
+  u <-  rnorm(n, 0, 1)
+  return(A %*% u)
+}
 
+CheckMND <- function(trials, Cov) {
+  sample_mean <- rep(0, dim(Cov)[1])
+  sample_cov <- matrix(0,dim(Cov)[1], dim(Cov)[2])
+  for(i in 1:trials) {
+    x <- GenerateMND(Cov)
+    sample_mean <- sample_mean + x
+  }
+  sample_mean <-  sample_mean / trials
+  # print(sample_mean)
+  AssertMatricesEqual(sample_mean, rep(0, dim(Cov)[1]), 1e-2)
+  for(i in 1:trials) {
+    x <- GenerateMND(Cov)
+    sample_cov <- sample_cov + x %*% t(x)
+  }
+  sample_cov <- sample_cov / trials
+  # print(sample_cov)
+  AssertMatricesEqual(sample_cov, Cov, 1e-2)
+  
+  print("You've passed the test!")
+}
+PSD = GeneratePSDMatrix(5)
+CheckMND(500000,PSD)
 ```
